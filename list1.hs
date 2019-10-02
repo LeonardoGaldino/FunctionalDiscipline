@@ -1,7 +1,59 @@
 import Data.List
+import Data.Char
 
 {- For importing <$> operator -}
 import Control.Applicative 
+
+
+{- Questão 1 -}
+
+let2int :: Char -> Int
+let2int =  (+ (- ord 'a')) . ord
+
+int2let :: Int -> Char
+int2let = chr . (+ ord 'a')
+
+shift :: Int -> Char -> Char
+shift key value = (int2let . (\v -> v `mod` 26) . (+key) . let2int) value
+
+encode :: Int -> String -> String
+encode key xs = unwords $ map (\wd -> shift key <$> wd) $ words xs
+
+percent :: Int -> Int -> Float
+percent n1 n2 = ((fromIntegral n1) :: Float) / ((fromIntegral n2) :: Float)
+
+freqs :: String -> [Float]
+freqs xs = [percent (counter letter) len | letter <- ['a'..'z']]
+    where
+        len = length xs
+        lowered = map toLower xs
+        counter letter = (length . filter (== letter)) lowered
+
+freqTable :: [Float]
+freqTable = [0.08167, 0.01492, 0.02782, 0.04253, 0.12702, 0.02228, 0.02015, 0.06094, 
+    0.06966, 0.00153, 0.00772, 0.04025, 0.02406, 0.06749, 0.07507, 0.01929, 0.00095,
+    0.05987, 0.06327, 0.09056, 0.02758, 0.00978, 0.02360, 0.00150, 0.01974, 0.00074]
+
+chisqr :: [Float] -> [Float] -> Float
+chisqr [] [] = 0
+chisqr (x:xs) (y:ys) = ((x-y)*(x-y)/y) + chisqr xs ys
+
+rotate :: Int -> [a] -> [a]
+rotate offset xs = (reverse . take complement . reverse) xs ++ take offset' xs
+        where
+            offset' = offset `mod` length xs
+            complement = length xs - offset'
+
+crack :: String -> String
+crack inp = encode (-lowestIndex) inp
+    where
+        table = freqs inp
+        possibilities = [(n, chisqr (rotate n table) freqTable) | n <- [0..25]]
+        lowestIndex = (fst . foldr1 (\v acc -> if snd v < snd acc then v else acc)) possibilities
+
+main :: IO ()
+main = getLine >>= (\v -> putStrLn (encode 3 v) >> (putStrLn $ show (crack (encode 3 v))))
+
 
 {- Questão 3 -}
 eps :: Double
