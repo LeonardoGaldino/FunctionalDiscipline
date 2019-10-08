@@ -54,6 +54,41 @@ crack inp = encode (-lowestIndex) inp
 main :: IO ()
 main = getLine >>= (\v -> putStrLn (encode 3 v) >> (putStrLn $ show (crack (encode 3 v))))
 
+{- Questão 2 -}
+data Prop = Constant Bool | Var Char | Not Prop | And Prop Prop | Imply Prop Prop
+
+type Subst = [(Char, Bool)]
+
+eval :: Subst -> Prop -> Bool
+eval _ (Constant b) = b
+eval table (Var v) = foldr (\(v', val) acc -> if v' == v then val else acc) False table
+eval table (Not prop) = not $ eval table prop
+eval table (And prop prop') = (eval table prop) && (eval table prop')
+eval table (Imply prop prop') = (not v1) || v2
+    where
+        (v1, v2) = (eval table prop, eval table prop')
+
+vars :: Prop -> [Char]
+vars (Constant _) = []
+vars (Var c) = [c]
+vars (Not prop) = (nub . vars) prop
+vars (And prop prop') = nub $ vars prop ++ vars prop'
+vars (Imply prop prop') = nub $ vars prop ++ vars prop'
+
+bools :: Int -> [[Bool]]
+bools 1 = [[True], [False]]
+bools n = (foldr1 (.) $ (take (n-1) . repeat) prependFT) [[False], [True]]
+    where 
+        prependFT xs = ((False:) <$> xs) ++ ((True:) <$> xs)
+
+substs :: Prop -> [Subst]
+substs prop = (zip vs) <$> bools nvs
+        where
+            vs = vars prop
+            nvs = length vs
+
+isTaut :: Prop -> Bool
+isTaut prop = all id $ map (\subst -> eval subst prop) $ substs prop
 
 {- Questão 3 -}
 eps :: Double
